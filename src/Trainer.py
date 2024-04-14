@@ -126,37 +126,47 @@ class Trainer:
                 cursor.execute("SELECT * FROM fitness_achievements WHERE email = %s", (member['email'],))
                 current_achievements = cursor.fetchone()
                 
-                if not current_achievements:
-                    # Create a new row for the member's email if no achievements exist
+                if current_achievements is None:
+                    # Initialize all achievements to False if none exist
+                    achievements_defaults = {
+                        'first_fitness_goal_achieved': False,
+                        'never_skipped_leg_day': False,
+                        'can_do_pushup': False,
+                        'can_do_pullup': False,
+                        'can_touch_toes': False,
+                        'achieved_weight_loss_goal': False,
+                        'achieved_muscle_gain_goal': False
+                    }
                     cursor.execute("""
-                        INSERT INTO fitness_achievements (email)
-                        VALUES (%s)
-                    """, (member['email'],))
+                        INSERT INTO fitness_achievements (email, first_fitness_goal_achieved, never_skipped_leg_day, can_do_pushup, can_do_pullup, can_touch_toes, achieved_weight_loss_goal, achieved_muscle_gain_goal)
+                        VALUES (%s, %(first_fitness_goal_achieved)s, %(never_skipped_leg_day)s, %(can_do_pushup)s, %(can_do_pullup)s, %(can_touch_toes)s, %(achieved_weight_loss_goal)s, %(achieved_muscle_gain_goal)s)
+                    """, {'email': member['email'], **achievements_defaults})
                     conn.commit()
-                    current_achievements = {'email': member['email']}  # Initialize empty achievements
-                
+                    current_achievements = achievements_defaults
+
                 # Display available achievements
                 print("Available Achievements:")
-                achievements = {1: "first_fitness_goal_achieved",
-                                2: "never_skipped_leg_day",
-                                3: "can_do_pushup",
-                                4: "can_do_pullup",
-                                5: "can_touch_toes",
-                                6: "achieved_weight_loss_goal",
-                                7: "achieved_muscle_gain_goal"}
+                achievements_keys = {
+                    1: "first_fitness_goal_achieved",
+                    2: "never_skipped_leg_day",
+                    3: "can_do_pushup",
+                    4: "can_do_pullup",
+                    5: "can_touch_toes",
+                    6: "achieved_weight_loss_goal",
+                    7: "achieved_muscle_gain_goal"
+                }
                 available_achievements = []
                 current_member_achievements = []
-                for idx, (key, value) in enumerate(achievements.items(), 1):
-                    if key != 'email':
-                        formatted_key = value.replace('_', ' ').capitalize()
-                        if current_achievements.get(value, False):
-                            current_member_achievements.append(formatted_key)
-                        else:
-                            available_achievements.append((idx, formatted_key))
 
-                if not current_member_achievements:
-                    print("This member currently has no achievements.")
-                else:
+                for idx, key in achievements_keys.items():
+                    achievement_status = current_achievements.get(key)
+                    formatted_key = key.replace('_', ' ').capitalize()
+                    if achievement_status:
+                        current_member_achievements.append(formatted_key)
+                    else:
+                        available_achievements.append((idx, formatted_key))
+
+                if current_member_achievements:
                     print("Current Member's Achievements:")
                     for achievement in current_member_achievements:
                         print("- " + achievement)
@@ -171,7 +181,7 @@ class Trainer:
                     if choice.isdigit():
                         choice_idx = int(choice)
                         if 1 <= choice_idx <= len(available_achievements):
-                            achievement_to_grant = achievements[available_achievements[choice_idx - 1][0]]
+                            achievement_to_grant = achievements_keys[available_achievements[choice_idx - 1][0]]
                             # Update the member's achievements
                             cursor.execute(f"""
                                 UPDATE fitness_achievements

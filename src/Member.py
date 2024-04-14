@@ -269,46 +269,6 @@ class Member:
             print("Fitness goals updated successfully.")
             print("Redirecting back to My Dashboard...")
             time.sleep(1)
-                    
-    def edit_view_fitness_achievements(self):
-        """Displays the fitness achievements of the member."""
-        try:
-            with DBManager.connection() as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute("""
-                        SELECT * FROM fitness_achievements WHERE email = %s
-                    """, (self.email,))
-                    achievements = cursor.fetchone()
-
-                    if not achievements:
-                        print("No fitness achievements data found.")
-                        return
-
-                    print("🏅 Your Fitness Achievements 🏅")
-                    print("--------------------------------")
-                    attrs = {
-                        'first_fitness_goal_achieved': 'First Fitness Goal Achieved',
-                        'never_skipped_leg_day': 'Never Skipped Leg Day',
-                        'can_do_pushup': 'Can Do Pushup',
-                        'can_do_pullup': 'Can Do Pullup',
-                        'can_touch_toes': 'Can Touch Toes',
-                        'achieved_weight_loss_goal': 'Achieved Weight Loss Goal',
-                        'achieved_muscle_gain_goal': 'Achieved Muscle Gain Goal'
-                    }
-
-                    for key, description in attrs.items():
-                        status = "Achieved" if achievements[key] else "Not Achieved Yet"
-                        print(f"{description}: {status}")
-
-                    print("\n👉 Ask your trainer about how to achieve or improve your fitness goals!")
-                    print("--------------------------------")
-
-        except psycopg2.Error as e:
-            print(f"An error occurred while accessing the database: {e}")
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
-
-
 
     def get_health_info(self):
         """Fetches health metrics from the database."""
@@ -479,25 +439,51 @@ class Member:
 
     @staticmethod
     def view_fitness_achievements(email):
+        clear_screen()
         if not isinstance(email, str):
             print("Invalid email type. Email must be a string.")
             return
-        
+
+        default_achievements = {
+            'first_fitness_goal_achieved': False,
+            'never_skipped_leg_day': False,
+            'can_do_pushup': False,
+            'can_do_pullup': False,
+            'can_touch_toes': False,
+            'achieved_weight_loss_goal': False,
+            'achieved_muscle_gain_goal': False
+        }
+
         with DBManager.connection() as conn:
             with conn.cursor() as cursor:
                 try:
                     cursor.execute("SELECT * FROM fitness_achievements WHERE email = %s", (email,))
                     achievements = cursor.fetchone()
-                    if achievements:
-                        print("Fitness Achievements:")
-                        print("| {:<30} | {:<10} |".format("Achievement", "Status"))
-                        for key, value in achievements.items():
-                            print("| {:<30} | {:<10} |".format(key, 'Yes' if value else 'No'))
-                    else:
-                        print("No fitness achievements found for the provided email. Ask a trainer for more information!")
-                        time.sleep(1)
+
+                    if not achievements:
+                        print("Initializing fitness achievements for the new member.")
+
+                        # Insert default achievements if none are found
+                        placeholders = ', '.join(['%s'] * len(default_achievements))
+                        columns = ', '.join(default_achievements.keys())
+                        values = list(default_achievements.values())
+                        cursor.execute(f"INSERT INTO fitness_achievements (email, {columns}) VALUES (%s, {placeholders})", (email, *values))
+                        conn.commit()
+                        achievements = default_achievements
+
+                    print("Fitness Achievements:")
+                    print("| {:<30} | {:<10} |".format("Achievement", "Status"))
+                    for key, value in achievements.items():
+                        if key != 'email':  # Ensure 'email' is not included in the output
+                            formatted_key = key.replace('_', ' ').capitalize()
+                            status = 'Yes' if value else 'No'
+                            print("| {:<30} | {:<10} |".format(formatted_key, status))
+                            
+                    print("Ask a trainer for more information on achievements!")
+                    input("Press Enter to go back...")  # Wait for user to acknowledge before returning
                 except psycopg2.Error as e:
-                    print(f"Failed to retrieve fitness achievements. Error: {e}")
+                    print(f"Failed to retrieve or initialize fitness achievements. Error: {e}")
+
 
     def show_or_edit_health_stats(self):
         clear_screen()
@@ -510,7 +496,7 @@ class Member:
                     continue
                 else:
                     return
-            
+            clear_screen()
             print("Health Statistics:")
             print("| {:<15} | {:^10} |".format("Metric", "Value"))
             for key, value in health_stats.items():
@@ -541,6 +527,7 @@ class Member:
 
     @staticmethod
     def edit_health_stats(email, callback=None):
+        clear_screen()
         """ Allows a member to edit their health statistics or sets up initial stats if none exist. """
         with DBManager.connection() as conn:
             cursor = conn.cursor()

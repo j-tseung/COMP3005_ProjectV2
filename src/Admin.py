@@ -716,8 +716,6 @@ class Admin:
 
     @staticmethod
     def manage_trainers():
-        
-        
         while True:
             clear_screen()
             print("====================================================")
