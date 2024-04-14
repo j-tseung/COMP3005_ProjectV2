@@ -1,5 +1,4 @@
 import sys
-
 from ClearScreen import clear_screen
 from Guest import Guest
 from Member import Member
@@ -37,7 +36,7 @@ def main_menu():
           
 def main():
     # Admin.add_admin_password()
-    print("thonk")
+    # print("thonk")
     main_menu()
 
 if __name__ == "__main__":

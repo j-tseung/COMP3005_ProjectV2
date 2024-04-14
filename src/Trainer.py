@@ -24,7 +24,8 @@ class Trainer:
                 record = cursor.fetchone()
 
                 if record is None:
-                    print("Trainer ID not found. Please try again.")
+                    print("Trainer ID not found. Please try again. Redirecting...")
+                    time.sleep(1)  # Pause for effect
                     return
 
                 stored_password = record['password'].encode('utf-8')
@@ -34,7 +35,8 @@ class Trainer:
                     trainer = Trainer(trainer_id)
                     trainer.run_dashboard()
                 else:
-                    print("Incorrect password. Please try again.")
+                    print("Incorrect password. Please try again. Redirecting...")
+                    time.sleep(1)  # Pause for effect
 
     def run_dashboard(self):
         while True:
@@ -125,35 +127,66 @@ class Trainer:
                 current_achievements = cursor.fetchone()
                 
                 if not current_achievements:
-                    print("No achievement data available for this member.")
-                    return
-
-                # Display available achievements, except the primary key 'email'
-                print("Available Achievements:")
-                achievement_keys = [key for key in current_achievements.keys() if key != 'email']
-                achievements = {str(idx + 1): key for idx, key in enumerate(achievement_keys)}
-                for idx, key in enumerate(achievement_keys, 1):
-                    formatted_key = key.replace('_', ' ').capitalize()
-                    print(f"{idx}. {formatted_key}")
-
-                # Let the trainer choose an achievement to grant
-                choice = input("Select an achievement to grant (enter the number): ")
-                if choice in achievements:
-                    achievement_to_grant = achievements[choice]
-                    # Ensure not to overwrite if already achieved
-                    if current_achievements[achievement_to_grant]:
-                        print(f"The member already has the '{achievement_to_grant.replace('_', ' ').capitalize()}' achievement.")
-                        return
-                    # Update the member's achievements
-                    cursor.execute(f"""
-                        UPDATE fitness_achievements
-                        SET {achievement_to_grant} = TRUE
-                        WHERE email = %s
+                    # Create a new row for the member's email if no achievements exist
+                    cursor.execute("""
+                        INSERT INTO fitness_achievements (email)
+                        VALUES (%s)
                     """, (member['email'],))
                     conn.commit()
-                    print(f"Achievement '{achievement_to_grant.replace('_', ' ').capitalize()}' granted to {member_name}.")
+                    current_achievements = {'email': member['email']}  # Initialize empty achievements
+                
+                # Display available achievements
+                print("Available Achievements:")
+                achievements = {1: "first_fitness_goal_achieved",
+                                2: "never_skipped_leg_day",
+                                3: "can_do_pushup",
+                                4: "can_do_pullup",
+                                5: "can_touch_toes",
+                                6: "achieved_weight_loss_goal",
+                                7: "achieved_muscle_gain_goal"}
+                available_achievements = []
+                current_member_achievements = []
+                for idx, (key, value) in enumerate(achievements.items(), 1):
+                    if key != 'email':
+                        formatted_key = value.replace('_', ' ').capitalize()
+                        if current_achievements.get(value, False):
+                            current_member_achievements.append(formatted_key)
+                        else:
+                            available_achievements.append((idx, formatted_key))
+
+                if not current_member_achievements:
+                    print("This member currently has no achievements.")
                 else:
-                    print("Invalid selection.")
+                    print("Current Member's Achievements:")
+                    for achievement in current_member_achievements:
+                        print("- " + achievement)
+
+                if available_achievements:
+                    print("\nAvailable Achievements:")
+                    for idx, formatted_key in available_achievements:
+                        print(f"{idx}. {formatted_key}")
+
+                    # Let the trainer choose an achievement to grant
+                    choice = input("Select an achievement to grant (enter the number): ")
+                    if choice.isdigit():
+                        choice_idx = int(choice)
+                        if 1 <= choice_idx <= len(available_achievements):
+                            achievement_to_grant = achievements[available_achievements[choice_idx - 1][0]]
+                            # Update the member's achievements
+                            cursor.execute(f"""
+                                UPDATE fitness_achievements
+                                SET {achievement_to_grant} = TRUE
+                                WHERE email = %s
+                            """, (member['email'],))
+                            conn.commit()
+                            print(f"Achievement '{achievement_to_grant.replace('_', ' ').capitalize()}' granted to {member_name}.")
+                        else:
+                            print("Invalid selection.")
+                    else:
+                        print("Invalid input.")
+                else:
+                    print("All achievements have been earned by this member.")
+
 
 
     def view_member_profile(self):
@@ -209,6 +242,7 @@ class Trainer:
                 exercise_routines = cursor.fetchone()
 
                 # Displaying the details
+                clear_screen()
                 print("\nMember Details:")
                 print("Name:", member_info['name'] if member_info else 'Not available')
                 

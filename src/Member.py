@@ -270,7 +270,7 @@ class Member:
             print("Redirecting back to My Dashboard...")
             time.sleep(1)
                     
-    def view_fitness_achievements(self):
+    def edit_view_fitness_achievements(self):
         """Displays the fitness achievements of the member."""
         try:
             with DBManager.connection() as conn:
@@ -499,33 +499,37 @@ class Member:
                 except psycopg2.Error as e:
                     print(f"Failed to retrieve fitness achievements. Error: {e}")
 
-
     def show_or_edit_health_stats(self):
-        """ Display and possibly edit health statistics. """
+        clear_screen()
         while True:
-            clear_screen()
-            health_stats = self.get_health_stats()
-
-            if not health_stats:
+            health_stats = self.get_health_stats()  # Fetch stats using an instance method
+            if health_stats is None:
                 print("No health statistics found for your account.")
-                print("Please set up your health information:")
-                self.edit_health_stats(self.email)  # Directly go to edit if no stats found
-                return
-
-            print("====================================================")
+                if input("Would you like to set up your health information now? (yes/no): ").lower().startswith('y'):
+                    self.edit_health_stats(self.email)  # Ensure this method can handle initial setup correctly
+                    continue
+                else:
+                    return
+            
             print("Health Statistics:")
-            print("| {:<15} | {:<10} |".format("Metric", "Value"))
+            print("| {:<15} | {:^10} |".format("Metric", "Value"))
             for key, value in health_stats.items():
-                print("| {:<15} | {:<10} |".format(key.capitalize(), value))
-            print("----------------------------------------------------")
+                print("| {:<15} | {:^10} |".format(key.replace('_', ' ').capitalize(), value))
+            
+            print("\nOptions:")
             print("1. Edit Health Statistics")
             print("2. Return to Dashboard")
-
-            choice = input("Enter choice: ")
+            
+            choice = input("Enter your choice: ")
             if choice == "1":
-                self.edit_health_stats(self.email)
+                self.edit_health_stats(self.email)  # Method to edit health stats, need to pass necessary details
             elif choice == "2":
                 return
+            else:
+                print("Invalid option. Please enter a valid choice.")
+                time.sleep(1)
+
+
 
     def get_health_stats(self):
         """ Fetches health statistics from the database. """
@@ -536,7 +540,7 @@ class Member:
             return {key: val for key, val in stats.items()} if stats else None
 
     @staticmethod
-    def edit_health_stats(email):
+    def edit_health_stats(email, callback=None):
         """ Allows a member to edit their health statistics or sets up initial stats if none exist. """
         with DBManager.connection() as conn:
             cursor = conn.cursor()
@@ -544,7 +548,6 @@ class Member:
             stats = cursor.fetchone()
 
             if not stats:
-                # No stats found, initialize with default values
                 print("Setting up initial health statistics for the new member.")
                 default_stats = {
                     'fitness_level': 1,  # Beginner
@@ -552,9 +555,9 @@ class Member:
                     'flexibility': 1,
                     'endurance': 1,
                     'stamina': 1,
-                    'Have water?': False,
-                    'Have protein?': False,
-                    'Injured?': False
+                    'has_water': False,
+                    'has_protein': False,
+                    'is_injured': False
                 }
                 cursor.execute("""
                     INSERT INTO health_statistics (email, fitness_level, strength, flexibility, endurance, stamina, has_water, has_protein, is_injured)
@@ -563,6 +566,8 @@ class Member:
                 conn.commit()
                 print("Initial health statistics have been set up.")
                 time.sleep(1)
+                if callback:
+                    callback()  # Redirect to the health stats view/edit menu
                 return
             else:
                 print("Your current stats:")

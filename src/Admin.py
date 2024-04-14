@@ -420,41 +420,41 @@ class Admin:
 
     @staticmethod
     def manage_class_schedule():
-        clear_screen()
-        print("=========================================================")
-        print("Class Schedule Management")
-
-        # Display current classes
-        with DBManager.connection() as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute("""
-                        SELECT class_id, class_name, trainer_id, room_id, day_of_week, start_time, duration
-                        FROM class_schedule
-                        ORDER BY class_id
-                    """)
-                    classes = cursor.fetchall()
-                    if classes:
-                        print("Current Classes:")
-                        print("| {:^10} | {:<15} | {:^15} | {:^7} | {:^15} | {:^10} | {:^10} |".format(
-                            "Class ID", "Class Name", "Trainer ID", "Room ID", "Day of Week", "Start Time", "Duration"))
-                        for class_ in classes:
-                            print("| {:^10} | {:<15} | {:^15} | {:^7} | {:^15} | {:^10} | {:^10} |".format(
-                                class_['class_id'],
-                                class_['class_name'],
-                                class_['trainer_id'],
-                                class_['room_id'],
-                                class_['day_of_week'],
-                                class_['start_time'].strftime('%H:%M'),
-                                class_['duration']))
-                        print("--------------------------------------------------------")
-                    else:
-                        print("No classes found.")
-                except psycopg2.Error as e:
-                    print("An error occurred while fetching class schedule:", e)
-        
         # Rest of the code for adding, editing, deleting classes
         while True:
+            clear_screen()
+            print("=========================================================")
+            print("Class Schedule Management")
+
+            # Display current classes
+            with DBManager.connection() as conn:
+                with conn.cursor() as cursor:
+                    try:
+                        cursor.execute("""
+                            SELECT class_id, class_name, trainer_id, room_id, day_of_week, start_time, duration
+                            FROM class_schedule
+                            ORDER BY class_id
+                        """)
+                        classes = cursor.fetchall()
+                        if classes:
+                            print("Current Classes:")
+                            print("| {:^10} | {:<15} | {:^15} | {:^7} | {:^15} | {:^10} | {:^10} |".format(
+                                "Class ID", "Class Name", "Trainer ID", "Room ID", "Day of Week", "Start Time", "Duration"))
+                            for class_ in classes:
+                                print("| {:^10} | {:<15} | {:^15} | {:^7} | {:^15} | {:^10} | {:^10} |".format(
+                                    class_['class_id'],
+                                    class_['class_name'],
+                                    class_['trainer_id'],
+                                    class_['room_id'],
+                                    class_['day_of_week'],
+                                    class_['start_time'].strftime('%H:%M'),
+                                    class_['duration']))
+                            print("--------------------------------------------------------")
+                        else:
+                            print("No classes found.")
+                    except psycopg2.Error as e:
+                        print("An error occurred while fetching class schedule:", e)
+        
             print("1. Add New Class")
             print("2. Edit Existing Class")
             print("3. Delete Class")
@@ -472,7 +472,6 @@ class Admin:
                 break
             else:
                 print("Invalid choice. Please choose again.")
-
 
     @staticmethod
     def add_class():
@@ -496,9 +495,9 @@ class Admin:
                     print(f"{trainer['trainer_id']}: {trainer['name']}")
 
         class_name = input("Enter Class Name: ")
-        instructor_id = Admin.get_valid_trainer_id(trainers, "Enter Trainer ID: ")
+        trainer_id = Admin.get_valid_trainer_id(trainers, "Enter Trainer ID: ")
         room_id = Admin.get_valid_room_id(rooms, "Enter Room ID: ")
-        day_of_week = Admin.get_valid_day_of_week("Enter Day of the Week (e.g., Mon): ")
+        day_of_week = Admin.get_valid_day_of_week(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], "Enter Day of the Week (e.g., Mon): ")
         start_time = Admin.get_valid_time("Enter Start Time (HH:MM): ")
         duration = Admin.get_valid_integer("Enter Duration (in minutes): ")
 
@@ -507,14 +506,16 @@ class Admin:
             with conn.cursor() as cursor:
                 try:
                     cursor.execute("""
-                        INSERT INTO class_schedule (class_name, instructor_id, room_id, day_of_week, start_time, duration)
+                        INSERT INTO class_schedule (class_name, trainer_id, room_id, day_of_week, start_time, duration)
                         VALUES (%s, %s, %s, %s, %s, %s)
-                    """, (class_name, instructor_id, room_id, day_of_week, start_time, duration))
+                    """, (class_name, trainer_id, room_id, day_of_week, start_time, duration))
                     conn.commit()
-                    print("Class added successfully.")
+                    print("Class added successfully. Redirecting...")
+                    time.sleep(1)
                 except psycopg2.Error as e:
                     conn.rollback()
                     print("Failed to add class. Error:", e)
+
                     
     @staticmethod
     def edit_class():
@@ -524,35 +525,57 @@ class Admin:
             with conn.cursor() as cursor:
                 try:
                     cursor.execute("""
-                        SELECT class_name, instructor_id, room_id, day_of_week, start_time, duration
+                        SELECT class_name, trainer_id, room_id, day_of_week, start_time, duration
                         FROM class_schedule
                         WHERE class_id = %s
                     """, (class_id,))
                     class_info = cursor.fetchone()
 
                     if not class_info:
-                        print("No class found with that ID.")
+                        print("No class found with that ID. Redirecting...")
+                        time.sleep(1)
                         return
 
                     # Display existing information and ask for new data
                     new_class_name = input(f"New Class Name [{class_info['class_name']}]: ") or class_info['class_name']
-                    new_instructor_id = input(f"New Instructor ID [{class_info['instructor_id']}]: ") or class_info['instructor_id']
+
+                    new_trainer_id = input(f"New Trainer ID [{class_info['trainer_id']}]: ") or class_info['trainer_id']
+                    new_trainer_id = int(new_trainer_id) if new_trainer_id.isdigit() else class_info['trainer_id']
+
                     new_room_id = input(f"New Room ID [{class_info['room_id']}]: ") or class_info['room_id']
-                    new_day = input(f"New Day of Week [{class_info['day_of_week']}]: ") or class_info['day_of_week']
+                    new_room_id = int(new_room_id) if new_room_id.isdigit() else class_info['room_id']
+
+                    valid_days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                    new_day = input(f"New Day of Week [{class_info['day_of_week']}]: ").capitalize() or class_info['day_of_week']
+                    new_day = new_day if new_day in valid_days else class_info['day_of_week']
+
                     new_start_time = input(f"New Start Time (HH:MM) [{class_info['start_time']}]: ") or class_info['start_time']
+                    try:
+                        new_start_time = datetime.datetime.strptime(new_start_time, '%H:%M').time()
+                    except ValueError:
+                        pass
+
                     new_duration = input(f"New Duration (HH:MM) [{class_info['duration']}]: ") or class_info['duration']
+                    if ':' in new_duration:
+                        try:
+                            new_duration = datetime.datetime.strptime(new_duration, '%H:%M').time()
+                        except ValueError:
+                            pass
 
                     cursor.execute("""
                         UPDATE class_schedule
-                        SET class_name = %s, instructor_id = %s, room_id = %s, day_of_week = %s,
-                            start_time = %s, duration = %s, 
+                        SET class_name = %s, trainer_id = %s, room_id = %s, day_of_week = %s,
+                            start_time = %s, duration = %s 
                         WHERE class_id = %s
-                    """, (new_class_name, new_instructor_id, new_room_id, new_day, new_start_time, new_duration, class_id))
+                    """, (new_class_name, new_trainer_id, new_room_id, new_day, new_start_time, new_duration, class_id))
                     conn.commit()
-                    print("Class updated successfully.")
+                    print("Class updated successfully. Redirecting...")
+                    time.sleep(1)
                 except psycopg2.Error as e:
                     conn.rollback()
                     print("An error occurred while updating the class:", e)
+                    time.sleep(1)
+
 
     @staticmethod
     def delete_class():
@@ -593,6 +616,7 @@ class Admin:
 
     @staticmethod
     def view_all_payments():
+        clear_screen()
         # This function now only prints the payments without the surrounding menu text
         with DBManager.connection() as conn:
             with conn.cursor() as cursor:
@@ -600,15 +624,15 @@ class Admin:
                     cursor.execute("""
                         SELECT payment_id, email, amount, payment_date, payment_type, status
                         FROM payments
-                        ORDER BY payment_date DESC
+                        ORDER BY payment_id
                     """)
                     payments = cursor.fetchall()
                     print("Current Payments:")
-                    print("| {:^10} | {:<30} | {:^8} | {:^10} | {:<15} | {:^10} |".format(
+                    print("| {:^10} | {:<30} | {:^8} | {:^10} | {:<20} | {:^10} |".format(
                         "ID", "Email", "Amount", "Date", "Type", "Status"
                     ))
                     for payment in payments:
-                        print("| {:^10} | {:<30} | ${:<7.2f} | {:^10} | {:<15} | {:^10} |".format(
+                        print("| {:^10} | {:<30} | ${:<7.2f} | {:^10} | {:<20} | {:^10} |".format(
                             payment['payment_id'],
                             payment['email'],
                             payment['amount'],

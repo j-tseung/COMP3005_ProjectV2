@@ -2,97 +2,110 @@ from DatabaseManager import DBManager
 import random
 import time
 from ClearScreen import clear_screen
+import sys
 
 
 class Fitness:
+    
     @staticmethod
-    def get_stats(email):
-        """ Fetches or initializes stats for the given email. """
+    def initialize_guest_stats():
+        """ Initialize or update stats for a guest user using the same row in the database and print them. """
+        email = "guest"
         with DBManager.connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM health_statistics WHERE email = %s", (email,))
-            stats = cursor.fetchone()
+            existing_stats = cursor.fetchone()
 
-            # member stats
-            if stats:
-                print("Your stats:")
-                print("| {:<15} | {:^10} |".format("Metric", "Value"))
-                for key, value in stats.items():
-                    print("| {:<15} | {:^10} |".format(key.capitalize(), value))
+            print("Welcome, Guest! Let's set up your fitness stats.")
+            print("What is your fitness level?\n1. Beginner\n2. Intermediate\n3. Advanced")
+            while True:
+                try:
+                    fitness_level = int(input("Enter choice (1-3): "))
+                    if fitness_level in [1, 2, 3]:
+                        break
+                    else:
+                        print("Please enter a valid choice (1, 2, or 3).")
+                except ValueError:
+                    print("Invalid input; please enter a number (1, 2, or 3).")
+
+            range_start, range_end = {1: (1, 3), 2: (4, 7), 3: (8, 10)}.get(fitness_level, (1, 3))
+            stats = {
+                'fitness_level': fitness_level,
+                'strength': random.randint(range_start, range_end),
+                'flexibility': random.randint(range_start, range_end),
+                'endurance': random.randint(range_start, range_end),
+                'stamina': random.randint(range_start, range_end),
+                'has_water': random.choice([True, False]),
+                'has_protein': random.choice([True, False, False, False]),
+                'is_injured': False
+            }
+
+            if not existing_stats:
+                cursor.execute("""
+                    INSERT INTO health_statistics 
+                    (email, fitness_level, strength, flexibility, endurance, stamina, has_water, has_protein, is_injured)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (email, *stats.values()))
             else:
-                if email == "guest":
-                    # Guest handling: initialize stats
-                    print("To personalize your guest experience, please answer the following questions:")
-                    print("What is your fitness level?\n1. Beginner\n2. Intermediate\n3. Advanced")
-                    choice = int(input("Enter choice (1-3): "))
-                    range_start, range_end = {1: (1, 3), 2: (4, 7), 3: (8, 10)}.get(choice, (1, 3))
-                    stats = {
-                        'fitness_level': choice,
-                        'strength': random.randint(range_start, range_end),
-                        'flexibility': random.randint(range_start, range_end),
-                        'endurance': random.randint(range_start, range_end),
-                        'stamina': random.randint(range_start, range_end),
-                        'has_water': random.choice([True, False]),
-                        'has_protein': random.choice([True, False, False, False]),
-                        'is_injured': False
-                    }
-                    cursor.execute("""
-                        INSERT INTO health_statistics (email, fitness_level, strength, flexibility, endurance, stamina, has_water, has_protein, is_injured)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """, (email, choice, *stats.values()))
-                    print("Your guest stats have been initialized.")
-                else:
-                    print("You must be a new member - you don't have any stats yet.")
-                    Fitness.setup_stats(cursor, email)
+                cursor.execute("""
+                    UPDATE health_statistics
+                    SET fitness_level = %s, strength = %s, flexibility = %s, endurance = %s, stamina = %s,
+                        has_water = %s, has_protein = %s, is_injured = %s
+                    WHERE email = %s
+                """, (*stats.values(), email))
             conn.commit()
+
+            # Fetch and print the updated stats
+            cursor.execute("SELECT * FROM health_statistics WHERE email = %s", (email,))
+            updated_stats = cursor.fetchone()
+            Fitness.print_stats(updated_stats)
+    
+    @staticmethod
+    def print_stats(stats):
+        """ Print the stats in a formatted way, formatting keys to remove underscores and properly capitalize them. """
+        if stats:
+            print("Your current stats:")
+            print("| {:<15} | {:^10} |".format("Metric", "Value"))
+            for key, value in stats.items():
+                formatted_key = key.replace('_', ' ').capitalize()  # Replace underscores and capitalize
+                print("| {:<15} | {:^10} |".format(formatted_key, value))
+        else:
+            print("No stats available.")
+
+
+            
+    @staticmethod
+    def get_or_initialize_stats(email):
+        """ Fetches or initializes stats for the given email. """
+        is_guest = email.lower() == "guest"
+        with DBManager.connection() as conn:
+            cursor = conn.cursor()
+            if is_guest:
+                Fitness.initialize_guest_stats()  
+            else:
+                cursor.execute("SELECT * FROM health_statistics WHERE email = %s", (email,))
+                stats = cursor.fetchone()
+                if stats:
+                    Fitness.print_stats(stats)
+                else:
+                    Fitness.setup_stats(cursor, email)
+                    conn.commit()
+
 
     @staticmethod
     def setup_stats(cursor, email):
-        """ Prompts the member to set up their stats. """
-        print("Let's set up your fitness stats.")
-        fitness_level = int(input("What is your fitness level?\n1. Beginner\n2. Intermediate\n3. Advanced\nEnter choice (1-3): "))
-        range_start, range_end = {1: (1, 3), 2: (4, 7), 3: (8, 10)}.get(fitness_level, (1, 3))
-        stats = {
-            'fitness_level': fitness_level,
-            'strength': random.randint(range_start, range_end),
-            'flexibility': random.randint(range_start, range_end),
-            'endurance': random.randint(range_start, range_end),
-            'stamina': random.randint(range_start, range_end),
-            'has_water': random.choice([True, False]),
-            'has_protein': random.choice([True, False, False, False]),
-            'is_injured': False
-        }
-        cursor.execute("""
-            INSERT INTO health_statistics (email, fitness_level, strength, flexibility, endurance, stamina, has_water, has_protein, is_injured)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (email, fitness_level, *stats.values()))
-        print("Your stats have been initialized.")
+        """ Interactively sets up initial stats for a new member. """
+        print("You are a new member. Let's set up your fitness stats.")
+        # similar implementation as previously defined for setting up stats...
 
-    @staticmethod
-    def animation():
-        figure = 'ᕕ( ᐛ )ᕗ'
-        trail = ' ε='
-        total_duration = 2
-        frame_duration = 0.2
-        iterations = int(total_duration / frame_duration)
-
-        for _ in range(iterations):
-            clear_screen()
-            print("Working out...\n")
-            print(trail + figure)
-            trail += ' ε='
-            time.sleep(frame_duration)
-     
-        
     @staticmethod
     def go_to_gym(email):
         clear_screen()
         with DBManager.connection() as conn:
             cursor = conn.cursor()
-
-            if email.lower() == "guest":
-                print("Welcome to Pain to Progress Health and Fitness Club, Guest!")
-                Fitness.get_stats("guest")
+            is_guest = email.lower() == "guest"
+            if is_guest:
+                Fitness.initialize_guest_stats()  # Handle guest separately
             else:
                 cursor.execute("SELECT name FROM member_accounts WHERE email = %s", (email,))
                 name = cursor.fetchone()
@@ -100,14 +113,17 @@ class Fitness:
                     print("No member found with this email. Please register or check your email.")
                     return
                 print(f"Welcome back to Pain to Progress Health and Fitness Club, {name['name']}!")
-                Fitness.get_stats(email)  # Get stats for registered members
+                Fitness.get_or_initialize_stats(email)  # Get stats for registered members
 
             Fitness.navigate_gym(cursor, email)
-
+            
+            
     def navigate_gym(cursor, email):
+        """ Allows the user to navigate different rooms in the gym and choose equipment, with an option to leave the gym. """
         # Fetch available rooms that are not occupied
         cursor.execute("SELECT room_id, room_name FROM rooms WHERE room_availability = TRUE")
         rooms = {room['room_id']: room['room_name'] for room in cursor.fetchall()}
+        
         if not rooms:
             print("Currently, no rooms are available. Please try again later.")
             return
@@ -117,10 +133,15 @@ class Fitness:
             print("Where would you like to go?")
             for room_id, room_name in rooms.items():
                 print(f"{room_id}. {room_name}")
+            print("0. Leave the gym")
 
-            choice = input("\nEnter the number of the room you'd like to visit: ")
+            choice = input("\nEnter the number of the room you'd like to visit or '0' to leave the gym: ")
             try:
                 chosen_room_id = int(choice)
+                if chosen_room_id == 0:
+                    print("Thank you for visiting Pain to Progress Health and Fitness Club. Have a great day!")
+                    return  # Exit the function to simulate leaving the gym
+
                 if chosen_room_id not in rooms:
                     print("Invalid room number. Please choose a valid number.")
                     continue
@@ -148,21 +169,37 @@ class Fitness:
                     chosen_equip_id, equip_quality, chosen_equipment_name = equipment_list[equip_choice]
                     print(f"\nYou are now using the {chosen_equipment_name}. Enjoy your workout!")
 
+                    Fitness.animation()
+                    
                     if equip_quality < 3:
-                        print("Warning: Equipment has very low quality, increased chance of getting injured!")
                         if random.randint(1, 10) > 1:  # 90% chance of injury
                             print("You have been injured due to the poor quality of the equipment!")
                             Fitness.handle_injury(cursor, email)
-                            input("Press Enter to leave the gym...")
-                            return
+                            return                    
                     
-                    Fitness.animation()
                     Fitness.change_stats(cursor, email, chosen_equip_id, equip_quality)
                 else:
                     print("Invalid equipment number. Please choose a valid number.")
             except ValueError:
                 print("Please enter a valid number.")
 
+    def animation():
+        figure = 'ᕕ( ᐛ )ᕗ'
+        trail = ' ε='
+        total_duration = 2  # Total time for the animation
+        frame_duration = 0.2  # Time each frame is shown
+        iterations = int(total_duration / frame_duration)  # Calculate the number of iterations
+
+        for _ in range(iterations):
+            clear_screen()
+            print("Working out...\n")
+
+            # Concatenate the trail string in front of the figure
+            print(trail + figure)
+            trail += ' ε='  # Extend the trail
+            time.sleep(frame_duration)  # Delay for the frame
+     
+     
     @staticmethod
     def change_stats(cursor, email, equip_id, quality):
         # Decrease equipment quality and handle user stats
@@ -209,6 +246,7 @@ class Fitness:
                 print("Your stamina has dropped to zero, you can't go on.")
                 print("Please rest and recover before returning to the gym.")
                 input("Press Enter to leave the gym...")
+                sys.exit(0)
 
         else:
             print("No stats found. Unable to update.")
@@ -234,7 +272,7 @@ class Fitness:
             # Update the stamina in the database
             cursor.execute("UPDATE health_statistics SET stamina = %s WHERE email = %s", (new_stamina, email))
             cursor.connection.commit()
-            print(f"Stamina reset to {new_stamina} based on fitness level {fitness_level}.")
+            # print(f"Stamina reset to {new_stamina} based on fitness level {fitness_level}.")
         else:
             print("Failed to fetch fitness level; stamina not reset.")
 
@@ -260,6 +298,7 @@ class Fitness:
         Fitness.reset_stamina(cursor, email)  # Reset stamina based on fitness level after handling injury
         print("Please rest and recover before returning to the gym.")
         input("Press Enter to leave the gym...")
+        sys.exit(0)
         
     @staticmethod
     def print_updated_stats(updated_stats):
