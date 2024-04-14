@@ -13,8 +13,6 @@ VALUES
     ('dave.wilson@example.com', 'Dave Wilson', 'passwordABC', 'Male', 40),
     ('emily.white@example.com', 'Emily White', 'passwordDEF', 'Female', 32);
 
-
-
 -- sample trainers_accounts (no password)
 INSERT INTO trainer_accounts (trainer_id, name, password, monday_available, tuesday_available, wednesday_available, thursday_available, friday_available, saturday_available, sunday_available)
 VALUES

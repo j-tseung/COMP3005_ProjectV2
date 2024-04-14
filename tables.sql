@@ -1,11 +1,6 @@
 -- CREATE SCHEMA public;
 -- DROP SCHEMA public CASCADE;
 
--- Admin Password
-CREATE TABLE admin (
-    password VARCHAR(255) PRIMARY KEY
-);
-
 -- Member Accounts
 CREATE TABLE member_accounts (
     email VARCHAR(255) UNIQUE PRIMARY KEY,
