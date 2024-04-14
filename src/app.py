@@ -1,3 +1,12 @@
+"""
+The main_menu function serves as the entry point to the different user interfaces based on the role (Guest, Member, Trainer, Administrator) within the fitness club management system.
+It continuously displays the main menu and redirects users to their respective dashboards based on their selection, ensuring a tailored experience for each type of user.
+
+Key Functionalities:
+- Provides a looped main menu interface where users can select their role.
+- Directs to specific functionalities such as Guest.menu(), Member.log_in(), Trainer.log_in(), and Admin.log_in() based on user input.
+"""
+
 import sys
 from ClearScreen import clear_screen
 from Guest import Guest

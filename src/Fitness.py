@@ -1,9 +1,37 @@
-from DatabaseManager import DBManager
+"""
+The Fitness class manages the interactions and functionalities related to fitness and gym 
+activities within the system. It handles a range of functionalities from initializing guest 
+statistics to managing gym navigation and updating fitness metrics for members.
+
+Key Functionalities:
+- initialize_guest_stats(): Initializes or updates fitness statistics for guest users, allowing them to use a consistent
+  set of fitness data during their gym session.
+- print_stats(stats): Outputs the current fitness statistics in a formatted table, improving readability by capitalizing
+  and adjusting the presentation of stat names.
+- get_or_initialize_stats(email): Retrieves existing fitness statistics for a given email or initializes them if they
+  do not exist, ensuring users have current data for their gym activities.
+- setup_stats(cursor, email): Provides a framework for setting up initial fitness statistics for new gym members.
+- go_to_gym(email): Manages the process of a user visiting the gym, including fetching user details and navigating through
+  available gym facilities.
+- navigate_gym(cursor, email): Allows users to select different rooms in the gym and choose equipment to use, enhancing
+  the interactivity of their gym experience.
+- animation(): Displays a simple text-based animation to simulate a workout, adding a visual element to the user interaction.
+- change_stats(cursor, email, equip_id, quality): Updates the fitness statistics based on the equipment used and the
+  outcome of the gym session.
+- reset_stamina(cursor, email): Resets a user's stamina based on their fitness level after certain activities to simulate
+  fatigue and recovery.
+- handle_injury(cursor, email): Manages the consequences of a gym injury by adjusting user stats and providing feedback.
+- print_updated_stats(updated_stats): Outputs updated fitness statistics after changes such as workouts or injuries.
+- print_mood(): Randomly selects and prints a mood-related message post-workout, reflecting the potential feelings of
+  the user after a gym session.
+"""
+
 import random
 import time
-from ClearScreen import clear_screen
 import sys
 
+from ClearScreen import clear_screen
+from DatabaseManager import DBManager
 
 class Fitness:
     
@@ -96,7 +124,6 @@ class Fitness:
     def setup_stats(cursor, email):
         """ Interactively sets up initial stats for a new member. """
         print("You are a new member. Let's set up your fitness stats.")
-        # similar implementation as previously defined for setting up stats...
 
     @staticmethod
     def go_to_gym(email):

@@ -1,9 +1,32 @@
+"""
+The Member class encapsulates all functionalities related to a gym member within the fitness 
+club management system. It manages member authentication, displays and updates personal and 
+fitness information, and allows members to interact with various aspects of their gym experience.
+
+Key Functionalities:
+- log_in(): Manages the member login process, authenticating users based on their credentials.
+- run_dashboard(): Provides a user interface for the member dashboard, allowing access to various features like gym visits,
+  personal information, health metrics, fitness goals, and more.
+- get_member_name(): Retrieves a member's name from the database, enhancing personalized interactions.
+- handle_dashboard_choice(choice): Directs user actions from the dashboard to specific functionalities based on the user's choice.
+- show_or_edit_personal_information(): Displays and allows editing of the member's personal information.
+- get_personal_info(): Fetches personal information from the database for display or editing.
+- edit_personal_information(user_info): Updates the member's personal information in the database.
+- show_or_edit_fitness_goals(): Displays and allows the editing of fitness goals, incorporating error handling for database interactions.
+- edit_fitness_goals(): Manages the selection and updating of preset or custom fitness goals.
+- get_health_info(), show_or_edit_health_info(), and edit_health_info(): Manage the fetching, displaying, and editing of health metrics.
+- show_or_edit_exercise_routines(): Displays and allows the editing of exercise routines.
+- view_fitness_achievements(email): Displays fitness achievements for a member and initializes them if none exist.
+- show_or_edit_health_stats(): Manages the display and editing of health statistics, including initialization for new members.
+
+"""
+
 import sys
 import getpass
 import bcrypt
 import time
 import psycopg2
-from datetime import datetime
+
 from ClearScreen import clear_screen
 from DatabaseManager import DBManager
 from Fitness import Fitness
@@ -580,9 +603,9 @@ class Member:
                     if new_value == "":
                         break  # Allow skipping
                     if isinstance(valid_inputs, range) and new_value.isdigit() and int(new_value) in valid_inputs:
-                        new_value = int(new_value)  # Convert to integer and accept
+                        new_value = int(new_value) 
                     elif new_value in valid_inputs:
-                        new_value = True if new_value == '1' else False  # Convert to boolean
+                        new_value = True if new_value == '1' else False  
                     else:
                         print("Invalid input. Please enter a valid value.")
                         continue  # Reprompt on invalid input

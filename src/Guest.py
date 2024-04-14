@@ -1,14 +1,33 @@
+"""
+The Guest class manages the guest interaction flow within the Pain to Progress Health and Fitness Club system.
+This class provides static methods to handle a menu-driven interface for guests, allowing them to learn
+about the club, create an account, and access a one-day pass to experience the gym facilities. 
+It encapsulates functionalities such as displaying information about the club, managing account creation,
+and handling the entry as a guest to the gym.
+
+Methods:
+- menu(): Displays the main menu specific to guests, providing them with various options including 
+  about us, create account, one-day pass, return to main menu, and exit.
+- about_us(): Displays information about the fitness club, emphasizing its mission and values.
+- create_account(): Guides the user through the process of creating a new account with validation
+  and appropriate feedback based on the input and database interaction outcomes.
+- go_to_gym(): Grants a one-day pass to the gym, simulated by calling a method in the Fitness class.
+- get_health_metrics(): Collects health metrics from the user, useful for potential extensions where
+  health data might influence guest recommendations or services.
+- get_valid_integer(prompt): Utility method to ensure the input collected is a valid integer.
+- choose_option(prompt, options): Provides a generic menu choice mechanism, allowing selection from a list of options.
+"""
+
 import sys
 import getpass
-from datetime import datetime
 import bcrypt
-from ClearScreen import clear_screen
+import psycopg2
+import time
 
+from ClearScreen import clear_screen
 from DatabaseManager import DBManager
 from Member import Member
 from Fitness import Fitness
-import psycopg2
-import time
 
 class Guest:
 
@@ -80,7 +99,6 @@ class Guest:
                     print("Account created successfully! Please log in with your new account as a Member.")
                     time.sleep(1)
                     Member.log_in()
-                    # return # back to main menu
                 except psycopg2.Error as e:
                     conn.rollback()
                     if e.pgcode == '23505':  # Unique violation

@@ -1,13 +1,28 @@
+"""
+The Admin class encapsulates all administrative functionalities within the Pain to Progress 
+Health and Fitness Club's management system. It offers static methods to manage various 
+aspects of the fitness club such as room bookings, equipment maintenance, class schedules, 
+payment processing, and the management of trainers and members.
+
+Key Functionalities:
+- add_admin_password(): Adds a hashed password for the admin into the database.
+- log_in(): Authenticates an admin using a password to provide access to the administrative dashboard.
+- run_dashboard(): Provides an interactive dashboard for managing the entire fitness club operations including rooms, equipment, classes, payments, trainers, and members.
+- manage_room_bookings(), monitor_equipment_maintenance(), manage_class_schedule(), process_payments(), manage_trainers(), and manage_members(): Each function allows the admin to perform specific management tasks, updating the database as necessary and providing a user-friendly interface for each administrative function.
+- admin_exit(): Safely exits the admin session and closes the application.
+"""
+
 import psycopg2
-from DatabaseManager import DBManager
 import getpass
 import bcrypt
-from ClearScreen import clear_screen
 import time
 import datetime
 import sys
+
+from ClearScreen import clear_screen
+from DatabaseManager import DBManager
+
 class Admin:
-    
     @staticmethod
     def add_admin_password():
         password = getpass.getpass("Please enter the admin password: ")

@@ -1,9 +1,23 @@
-import psycopg2
-from DatabaseManager import DBManager
+"""
+The Trainer class manages the functionalities related to personal trainers within the Pain 
+to Progress Health and Fitness Club. It allows trainers to log in, manage their schedules,
+view and update member profiles, award fitness achievements, and edit their availability.
+
+Key Functionalities:
+- log_in(): Allows a trainer to log in with their unique ID and password to access their personalized dashboard.
+- run_dashboard(): Displays the trainer dashboard where they can manage their daily schedule, access member profiles, award achievements, and update their availability.
+- edit_availability(): Enables trainers to update their weekly availability for scheduling purposes.
+- give_member_achievement(): Allows trainers to award fitness achievements to members based on their performance and milestones.
+- view_member_profile(): Provides detailed profiles of members including personal information, health statistics, fitness goals, and exercise routines, facilitating better personalized training plans.
+- display_member_details(): Displays comprehensive details of a selected member, aiding trainers in providing tailored fitness guidance.
+"""
+
+import time
 import bcrypt
 import getpass
+
 from ClearScreen import clear_screen
-import time
+from DatabaseManager import DBManager
 
 class Trainer:
     def __init__(self, trainer_id):
